@@ -1,0 +1,4 @@
+import {keccak_256} from '@noble/hashes/sha3.js';
+const h=s=>Buffer.from(keccak_256(new TextEncoder().encode(s))).toString('hex');
+for (const s of ['getEntireDebtAndColl(address)','getCurrentICR(address,uint256)','getTroveStatus(address)','getTroveInterestRate(address)','fetchPrice()','minNetDebt()','getSize()','getFirst()','getNext(address)','getTCR(uint256)','getTroveOwnersCount()','getTroveFromTroveOwnersArray(uint256)','balanceOf(address)'])console.log(s,'0x'+h(s).slice(0,8));
+for (const s of ['TroveUpdated(address,uint256,uint256,uint256,uint256,uint16,uint256,uint8)','TroveLiquidated(address,uint256,uint256,uint8)','TroveCreated(address,uint256)','BorrowingFeePaid(address,uint256)','Redemption(uint256,uint256,uint256,uint256)','Transfer(address,address,uint256)','RefinancingFeePaid(address,uint256)'])console.log(s,'0x'+h(s));
