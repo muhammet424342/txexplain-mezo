@@ -205,8 +205,17 @@ async function tx(hash) {
 
 const J = (o, s = 200) => new Response(JSON.stringify(o, null, 2), { status: s, headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "no-store" } });
 
+// Optional on-chain alert registry (contracts/src/TroveAlertRegistry.sol). Disabled unless the
+// ALERTS_CONTRACT plain-text env var holds a 0x address of a deployed registry on Mezo testnet.
+const CHECK_SEL = "0xc23697a8"; // check(address)
+const alertsAddr = (env) => { const a = env && env.ALERTS_CONTRACT; return a && /^0x[0-9a-fA-F]{40}$/.test(a) ? a.toLowerCase() : null; };
+async function alerts(reg, addr) {
+  const [active, icr, threshold, below, liq] = words(await ethCall(reg, CHECK_SEL + pad(addr)));
+  return { registry: reg, borrower: addr, troveActive: active === 1n, icrPct: pct(icr), alertThresholdPct: threshold ? pct(threshold) : null, belowThreshold: below === 1n, liquidatable: liq === 1n, explorer: `${NET.explorer}/address/${reg}` };
+}
+
 export default {
-  async fetch(req) {
+  async fetch(req, env) {
     const u = new URL(req.url);
     const p = u.pathname;
     try {
@@ -217,6 +226,7 @@ export default {
       let m;
       if ((m = p.match(/^\/api\/trove\/(0x[0-9a-fA-F]{40})$/))) return J(await trove(m[1].toLowerCase()));
       if ((m = p.match(/^\/api\/tx\/(0x[0-9a-fA-F]{64})$/))) return J(await tx(m[1].toLowerCase()));
+      if ((m = p.match(/^\/api\/alerts\/(0x[0-9a-fA-F]{40})$/))) { const reg = alertsAddr(env); if (!reg) return J({ enabled: false, error: "Alert registry not deployed yet (ALERTS_CONTRACT unset)" }, 503); return J(await alerts(reg, m[1].toLowerCase())); }
       if (p.startsWith("/api/")) return J({ error: "Use /api/trove/<address> or /api/tx/<hash>" }, 400);
       return J({ error: "not found" }, 404);
     } catch (e) {
